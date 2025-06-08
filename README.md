@@ -32,9 +32,16 @@ Se quiser rodar o projeto localmente, contribuir ou modificar:
 
 ### Pré-requisitos
 
-- Node.js  
+- Node.js
 - Rust e Cargo  
-- Tauri CLI (`cargo install tauri-cli`)
+- Tauri CLI
+```bash
+cargo install tauri-cli
+```
+- Pnpm
+```bash
+npm install -g pnpm
+```
 
 ### Instalação e execução
 
