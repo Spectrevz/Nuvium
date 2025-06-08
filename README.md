@@ -42,7 +42,8 @@ cargo install tauri-cli
 ```bash
 npm install -g pnpm
 ```
-- Configure o Pnpm:
+Obs: Após baixar, fechar o terminal e/ou IDE e abrir novamente.
+- Configure o Pnpm (Se necessário):
 ```bash
 pnpm setup
 ```
