@@ -42,6 +42,10 @@ cargo install tauri-cli
 ```bash
 npm install -g pnpm
 ```
+- Configure o Pnpm:
+```bash
+pnpm setup
+```
 
 ### Instalação e execução
 
