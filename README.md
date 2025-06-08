@@ -41,12 +41,12 @@ Se quiser rodar o projeto localmente, contribuir ou modificar:
 ```bash
 git clone https://github.com/spectrevz/nuvium.git
 cd nuvium
-npm install
-npm run tauri dev
+pnpm install
+pnpm tauri dev
 ```
 
 ### Build para produção
 
 ```bash
-npm run tauri build
+pnpm tauri build
 ```
