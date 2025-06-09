@@ -18,7 +18,7 @@
     "@mantine/nprogress": "^7.16.3",
     "@mantine/spotlight": "^7.16.3",
     "@mantine/tiptap": "^7.16.3",
-    "@tauri-apps/api": "^2.2.0",
+    "@tauri-apps/api": "^2.5.0",
     "@tauri-apps/plugin-autostart": "^2.2.0",
     "@tauri-apps/plugin-deep-link": "^2.2.0",
     "@tauri-apps/plugin-dialog": "~2.2.0",
