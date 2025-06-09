@@ -1,11 +1,11 @@
 [package]
-name = "app"
-version = "0.0.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
-repository = ""
+name = "Nuvium"
+version = "0.0.2"
+description = "Modern desktop app to manage, share, and version files in the cloud with ease."
+authors = ["Rodrigo Dias"]
+license = "MIT License"
 edition = "2021"
+repository = ""
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -55,5 +55,5 @@ opt-level = "s" # Optimize for binary size
 # strip = true  # Automatically strip symbols from the binary.
 
 [lib]
-name = "app_lib"
+name = "nuvium_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]

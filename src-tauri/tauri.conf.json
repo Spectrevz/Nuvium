@@ -7,8 +7,8 @@
       "digestAlgorithm": "sha256",
       "timestampUrl": ""
     },
-    "publisher": "Unknown Publisher",
-    "copyright": "Copyright Notice",
+    "publisher": "Rodrigo",
+    "copyright": "© 2025 Spectrevz — Made by Rodrigo Dias",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -18,9 +18,9 @@
     ],
     "resources": [],
     "externalBin": [],
-    "category": "DeveloperTool",
-    "shortDescription": "",
-    "longDescription": "",
+    "category": "Productivity",
+    "shortDescription": "Modern desktop app to manage, share, and version files in the cloud with ease.",
+    "longDescription": "Nuvium is a modern desktop application built with Tauriv2, React, and Rust, designed for businesses and teams to efficiently manage, share, and version files in the cloud. It offers an intuitive drag & drop interface, commit history with messages, file categorization, intelligent search, and plans for multi-cloud integration, providing fast and secure local management powered by cloud technology.",
     "macOS": {
       "frameworks": [],
       "minimumSystemVersion": "",
@@ -41,10 +41,10 @@
     "frontendDist": "../build",
     "devUrl": "http://localhost:1420"
   },
-  "productName": "Product Name",
-  "mainBinaryName": "Product Name",
+  "productName": "Nuvium",
+  "mainBinaryName": "Nuvium",
   "version": "../package.json",
-  "identifier": "App.Name",
+  "identifier": "io.nuvium.app",
   "plugins": {
     "updater": {
       "endpoints": [
@@ -59,7 +59,7 @@
     },
     "windows": [
       {
-        "title": "tauri.conf.json > tauri > windows > title",
+        "title": "Nuvium",
         "label": "main",
         "minWidth": 1000,
         "minHeight": 600,
