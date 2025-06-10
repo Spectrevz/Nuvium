@@ -25,6 +25,8 @@ import { useTauriContext } from './tauri/TauriProvider';
 import { TitleBar } from './tauri/TitleBar';
 import FallbackAppRender from './views/FallbackErrorBoundary';
 import FallbackSuspense from './views/FallbackSuspense';
+import { text } from 'stream/consumers';
+
 
 
 // ---
@@ -37,12 +39,15 @@ interface LinkView {
     path: string;
     exact?: boolean;
     name: string;
+    id?: string; // <--- ADIÇÃO SOLICITADA
+    className?: string; // <--- ADIÇÃO SOLICITADA
 }
 
 interface ActionButtonView {
     type: 'action'; // Discriminante: indica que é um botão de ação
     action: () => void; // Função a ser executada ao clicar no botão
     name: string;
+    styles?: any;// <--- ADIÇÃO SOLICITADA
     // Opcional: Você pode adicionar um ícone aqui se quiser ícones para botões de ação
     // icon?: JSX.Element;
 }
@@ -58,65 +63,75 @@ export default function App() { // Renomeado para 'App' para clareza
 
     // left sidebar ()
     const views: View[] = [
-       {
+        {
             type: 'action', // <-- Novo item de ação na sidebar
-            name: t('Category'), // Usando a tradução
-            action: async () => {
+            name: t('Category'), // <--- ADIÇÃO SOLICITADA
+            styles: {
+                root: {
                 
+    },
+},
+            action: async () => {
+
             }
         },
-		 {
-        type: 'action', // Indica que este item é um botão de ação
-        name: t('OpenFileSearcher'), // Nome exibido no botão, usando tradução
-        action: async () => { // A função assíncrona que será executada ao clicar no botão
-            try {// Chama a função 'open' do plugin de diálogo para abrir o seletor de arquivos
-                const selected = await open({
-                    multiple: true, // Define se o usuário pode selecionar múltiplos arquivos (true = pode selecionar vários arquivos)
-					title: t('Selectfiles'), // Título do diálogo, usando tradução
-                    directory: false, // Define se o usuário pode selecionar diretórios (false = apenas arquivos)
-                    filters: [ // Filtros opcionais para tipos de arquivo
-                        {
-                            name: 'Text Files',
-                            extensions: ['txt', 'md']
-                        },
-                        {
-                            name: 'Image Files',
-                            extensions: ['png', 'jpeg', 'jpg', 'gif']
-                        },
-                        {
-                            name: 'All Files',
-                            extensions: ['*'] // Permite todos os tipos de arquivo
-                        }
-                    ]
-                });
-                // Verifica se um arquivo foi realmente selecionado (ou se o usuário cancelou)
-                if (selected) {
-                    // 'selected' pode ser uma string (caminho do arquivo) ou um array de strings se multiple: true
-                    const filePath = Array.isArray(selected) ? selected[0] : selected;
-                    notifications.show({
-                        title: t('Success'),
-                        message: t('Fileselectedsuccess'), // Mensagem de sucesso
-                        color: 'green',
-                        autoClose: 3000,
-                    });
-                } else {
-                    notifications.show({
-                        title: t('canceled'),
-                        message: t('opercanceled'), // Mensagem se a seleção for cancelada
-                        color: 'blue',
-                        autoClose: 2000,
-                    });
-                }
-            } catch (error) {
-                notifications.show({
-                    title: t('Error'),
-                    message: t('errorselecting'),
-                    color: 'red',
-                    autoClose: 5000,
-                });
-            }
+        {
+            type: 'action', // Indica que este item é um botão de ação
+            name: t('OpenFileSearcher'),
+                        styles: {
+                root: {
+                 
         }
     },
+            action: async () => { // A função assíncrona que será executada ao clicar no botão
+                try {// Chama a função 'open' do plugin de diálogo para abrir o seletor de arquivos
+                    const selected = await open({
+                        multiple: true, // Define se o usuário pode selecionar múltiplos arquivos (true = pode selecionar vários arquivos)
+                        title: t('Selectfiles'), // Título do diálogo, usando tradução
+                        directory: false, // Define se o usuário pode selecionar diretórios (false = apenas arquivos)
+                        filters: [ // Filtros opcionais para tipos de arquivo
+                            {
+                                name: 'Text Files',
+                                extensions: ['txt', 'md']
+                            },
+                            {
+                                name: 'Image Files',
+                                extensions: ['png', 'jpeg', 'jpg', 'gif']
+                            },
+                            {
+                                name: 'All Files',
+                                extensions: ['*'] // Permite todos os tipos de arquivo
+                            }
+                        ]
+                    });
+                    // Verifica se um arquivo foi realmente selecionado (ou se o usuário cancelou)
+                    if (selected) {
+                        // 'selected' pode ser uma string (caminho do arquivo) ou um array de strings se multiple: true
+                        const filePath = Array.isArray(selected) ? selected[0] : selected;
+                        notifications.show({
+                            title: t('Success'),
+                            message: t('Fileselectedsuccess'), // Mensagem de sucesso
+                            color: 'green',
+                            autoClose: 3000,
+                        });
+                    } else {
+                        notifications.show({
+                            title: t('canceled'),
+                            message: t('opercanceled'), // Mensagem se a seleção for cancelada
+                            color: 'blue',
+                            autoClose: 2000,
+                        });
+                    }
+                } catch (error) {
+                    notifications.show({
+                        title: t('Error'),
+                        message: t('errorselecting'),
+                        color: 'red',
+                        autoClose: 5000,
+                    });
+                }
+            }
+        },
 
     ];
 
@@ -224,16 +239,23 @@ export default function App() { // Renomeado para 'App' para clareza
         return views.map((view, index) => {
             if (view.type === 'link') { // Se for um link de navegação
                 return (
-                    <NavLink to={view.path} key={index} end={view.exact} onClick={() => toggleMobileNav()}
-                        className={({ isActive }) => classes.navLink + ' ' + (isActive ? classes.navLinkActive : classes.navLinkInactive)}>
+                    <NavLink
+                        to={view.path}
+                        key={index}
+                        end={view.exact}
+                        onClick={() => toggleMobileNav()}
+                        className={({ isActive }) => classes.navLink + ' ' + (isActive ? classes.navLinkActive : classes.navLinkInactive) + (view.className ? ` ${view.className}` : '')} // <--- MODIFICAÇÃO SOLICITADA (className)
+                        id={view.id} // <--- MODIFICAÇÃO SOLICITADA (id)
+                    >
                         {/* TODO: Icons */}
                         <Group><Text>{view.name}</Text></Group>
                     </NavLink>
                 );
             } else if (view.type === 'action') { // Se for um botão de ação
                 return (
-                    <Button // Usando Button do Mantine para um estilo de botão
-                        key={index}
+                    <Button
+                        styles={view.styles}
+                         // Usando Button do Mantine para um estilo de botão
                         onClick={() => {
                             view.action(); // Executa a ação
                             toggleMobileNav(); // Fecha a sidebar móvel após a ação
@@ -241,7 +263,7 @@ export default function App() { // Renomeado para 'App' para clareza
                         variant="subtle" // Estilo sutil para parecer um link
                         fullWidth // Ocupa a largura total
                         justify="flex-start" // Alinha o texto à esquerda
-                        className={classes.navLink} // Reutiliza a classe para consistência de estilo
+                    
                     >
                         {/* TODO: Icons for action buttons */}
                         <Group><Text>{view.name}</Text></Group>
@@ -334,7 +356,7 @@ export default function App() { // Renomeado para 'App' para clareza
                     <AppShell.Section>
                         <Space h={navbarClearance} />
                     </AppShell.Section>
-                </AppShell.Navbar> 
+                </AppShell.Navbar>
             </AppShell>
         </>
     );
