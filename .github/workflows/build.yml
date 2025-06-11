@@ -48,9 +48,7 @@ jobs:
       # build the changelog based on the commit messages between the versioned tags
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          use-package-manager-version: true
-
+        
       - name: Setup Node.js
         uses: actions/setup-node@v4
         # NOTE: enterprise developers may hard code a version
