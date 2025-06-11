@@ -17,7 +17,7 @@ import { IoSunnySharp } from 'react-icons/io5';
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom';
 import SimpleBar from 'simplebar-react';
 import 'simplebar-react/dist/simplebar.min.css';
-import classes from './App.module.css';
+import classes from './assets/styles/App.module.css';
 import { useCookie, useLocalForage } from './common/utils';
 import LanguageHeaders from './components/LanguageHeaders';
 import { ScrollToTop } from './components/ScrollToTop';
@@ -26,11 +26,8 @@ import { TitleBar } from './tauri/TitleBar';
 import FallbackAppRender from './views/FallbackErrorBoundary';
 import FallbackSuspense from './views/FallbackSuspense';
 import { text } from 'stream/consumers';
+import './assets/styles/global.css';
 
-
-
-// ---
-// DEFINIÇÃO DA INTERFACE 'VIEW' COM DISCRIMINATED UNIONS
 // imported views need to be added to the `views` list variable
 
 interface LinkView {
@@ -39,17 +36,17 @@ interface LinkView {
     path: string;
     exact?: boolean;
     name: string;
-    id?: string; // <--- ADIÇÃO SOLICITADA
-    className?: string; // <--- ADIÇÃO SOLICITADA
+    id: string;
+    className: string; 
 }
 
 interface ActionButtonView {
     type: 'action'; // Discriminante: indica que é um botão de ação
     action: () => void; // Função a ser executada ao clicar no botão
     name: string;
-    styles?: any;// <--- ADIÇÃO SOLICITADA
-    // Opcional: Você pode adicionar um ícone aqui se quiser ícones para botões de ação
-    // icon?: JSX.Element;
+    id: string;
+    className: string; 
+    // icon?: JSX.Element; Opcional: Você pode adicionar um ícone aqui se quiser ícones para botões de ação
 }
 
 // O tipo `View` agora é uma união de `LinkView` e `ActionButtonView`
@@ -65,12 +62,9 @@ export default function App() { // Renomeado para 'App' para clareza
     const views: View[] = [
         {
             type: 'action', // <-- Novo item de ação na sidebar
-            name: t('Category'), // <--- ADIÇÃO SOLICITADA
-            styles: {
-                root: {
-                
-    },
-},
+            name: t('Category'),
+            id: 'category-btn',
+            className: 'action-item action-btn',
             action: async () => {
 
             }
@@ -78,11 +72,8 @@ export default function App() { // Renomeado para 'App' para clareza
         {
             type: 'action', // Indica que este item é um botão de ação
             name: t('OpenFileSearcher'),
-                        styles: {
-                root: {
-                 
-        }
-    },
+            id: 'file-search-btn',
+            className: 'action-item action-btn',
             action: async () => { // A função assíncrona que será executada ao clicar no botão
                 try {// Chama a função 'open' do plugin de diálogo para abrir o seletor de arquivos
                     const selected = await open({
@@ -244,18 +235,17 @@ export default function App() { // Renomeado para 'App' para clareza
                         key={index}
                         end={view.exact}
                         onClick={() => toggleMobileNav()}
-                        className={({ isActive }) => classes.navLink + ' ' + (isActive ? classes.navLinkActive : classes.navLinkInactive) + (view.className ? ` ${view.className}` : '')} // <--- MODIFICAÇÃO SOLICITADA (className)
-                        id={view.id} // <--- MODIFICAÇÃO SOLICITADA (id)
                     >
                         {/* TODO: Icons */}
                         <Group><Text>{view.name}</Text></Group>
                     </NavLink>
                 );
-            } else if (view.type === 'action') { // Se for um botão de ação
+            } else if (view.type === 'action') {
+                const combinedClassNames = `${classes.actionButton || ''} ${view.className || ''}`.trim(); // Se for um botão de ação
                 return (
                     <Button
-                        styles={view.styles}
-                         // Usando Button do Mantine para um estilo de botão
+                        id={view.id}
+                        className={combinedClassNames} 
                         onClick={() => {
                             view.action(); // Executa a ação
                             toggleMobileNav(); // Fecha a sidebar móvel após a ação
