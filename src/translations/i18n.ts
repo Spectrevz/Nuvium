@@ -3,6 +3,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
 import en from './en.json';
 import fr from './fr.json';
+import ptBR from './pt_br.json';
 
 export const defaultLng = 'en';
 export const defaultNS = 'translations';
@@ -13,6 +14,9 @@ export const resources = {
 	},
 	fr: {
 		[defaultNS]: fr
+	},
+	'pt-br': {
+		[defaultNS]: ptBR
 	}
 }
 

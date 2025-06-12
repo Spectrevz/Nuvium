@@ -1,0 +1,21 @@
+{
+  "errorselecting": "Opa! Algo deu errado ao escolher o arquivo.",
+  "opercanceled": "Operação cancelada pelo usuário",
+  "canceled": "Cancelado",
+  "Fileselectedsuccess": "Arquivo selecionado com sucesso",
+  "Success": "Sucesso",
+  "Selectfiles": "Selecionar arquivos",
+  "test": "Teste",
+  "Category": "Categoria",
+  "FailedToOpenFileManager": "Falha ao abrir o gerenciador de arquivos",
+  "Error": "Erro",
+  "OpenFileSearcher": "Abrir buscador de arquivos",
+  "Close": "Fechar",
+  "Maximize": "Maximizar",
+  "Minimize": "Minimizar",
+  "installingUpdate": "Instalando atualização v{{ v }}",
+  "updateAvailable": "Atualização v{{ v }} disponível",
+  "relaunchMsg": "Será reiniciado em seguida",
+  "installAndRelaunch": "Instalar atualização e reiniciar",
+  "footer[0]": "Mensagem de RODAPÉ dos arquivos de tradução"
+}

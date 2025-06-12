@@ -231,6 +231,7 @@ export default function App() { // Renomeado para 'App' para clareza
             if (view.type === 'link') { // Se for um link de navegação
                 return (
                     <NavLink
+                    
                         to={view.path}
                         key={index}
                         end={view.exact}
@@ -282,6 +283,7 @@ export default function App() { // Renomeado para 'App' para clareza
         <>
             {usingCustomTitleBar && <TitleBar />}
             <AppShell
+            
                 padding="md"
                 navbar={{
                     width: 200,
