@@ -12,17 +12,17 @@ import {
   Tabs,
 } from '@mantine/core';
 import { Window } from '@tauri-apps/api/window';
-import * as tauriEvent from '@tauri-apps/api/event';
+import { emit } from '@tauri-apps/api/event';
+import { load } from '@tauri-apps/plugin-store';
 import { useAppTheme } from '../common/useAppTheme';
 import { resources, defaultLng } from '../translations/i18n';
 import packageJson from '../../package.json';
-import { load } from '@tauri-apps/plugin-store';
 
 type ColorSchemeOption = 'light' | 'dark';
 
 export default function Settings() {
   const { t, i18n } = useTranslation();
-  const { colorScheme, setColorScheme } = useAppTheme();
+  const { colorScheme } = useAppTheme(); // Only use colorScheme for initial load
 
   const [tempColorScheme, setTempColorScheme] = useState<ColorSchemeOption>(colorScheme);
   const [tempLanguage, setTempLanguage] = useState(i18n.resolvedLanguage || defaultLng);
@@ -43,20 +43,19 @@ export default function Settings() {
 
         if (savedTheme === 'light' || savedTheme === 'dark') {
           setTempColorScheme(savedTheme);
-          setColorScheme(savedTheme); // Aplica imediatamente ao carregar
         }
 
         if (savedLanguage && typeof savedLanguage === 'string') {
           setTempLanguage(savedLanguage);
-          i18n.changeLanguage(savedLanguage); // Aplica imediatamente ao carregar
+          i18n.changeLanguage(savedLanguage);
         }
       } catch (e) {
-        console.error('Erro ao carregar configurações:', e);
+        console.error('Settings.tsx: Erro ao carregar configurações:', e);
       }
     }
 
     loadSettings();
-  }, []);
+  }, [i18n]);
 
   const handleSave = async () => {
     try {
@@ -65,13 +64,14 @@ export default function Settings() {
       await store.set('language', tempLanguage);
       await store.save();
 
-      tauriEvent.emit('app_settings_changed', { type: 'theme', value: tempColorScheme });
-      tauriEvent.emit('app_settings_changed', { type: 'language', value: tempLanguage });
+      console.log('Settings.tsx: Emitting app_settings_changed for theme:', tempColorScheme);
+      await emit('app_settings_changed', { type: 'theme', value: tempColorScheme });
+      console.log('Settings.tsx: Emitting app_settings_changed for language:', tempLanguage);
+      await emit('app_settings_changed', { type: 'language', value: tempLanguage });
 
-      // O setColorScheme e i18n.changeLanguage já foram chamados ao clicar
       Window.getCurrent().close();
     } catch (e) {
-      console.error('Erro ao salvar configurações:', e);
+      console.error('Settings.tsx: Erro ao salvar configurações:', e);
     }
   };
 
@@ -101,8 +101,7 @@ export default function Settings() {
                   color={tempColorScheme === 'light' ? 'blue' : 'gray'}
                   radius="xl"
                   onClick={() => {
-                    setTempColorScheme('light');
-                    setColorScheme('light'); // muda tema na hora
+                    setTempColorScheme('light'); // Only update temp state
                   }}
                 >
                   {t('White Theme') || 'White'}
@@ -112,8 +111,7 @@ export default function Settings() {
                   color={tempColorScheme === 'dark' ? 'blue' : 'gray'}
                   radius="xl"
                   onClick={() => {
-                    setTempColorScheme('dark');
-                    setColorScheme('dark'); // muda tema na hora
+                    setTempColorScheme('dark'); // Only update temp state
                   }}
                 >
                   {t('Black Theme') || 'Black'}
@@ -137,7 +135,7 @@ export default function Settings() {
                     size="sm"
                     onClick={() => {
                       setTempLanguage(value);
-                      i18n.changeLanguage(value); // muda idioma na hora
+                      i18n.changeLanguage(value); // Immediate language change for UI feedback
                     }}
                   >
                     {label}

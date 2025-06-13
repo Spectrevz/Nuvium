@@ -1,52 +1,58 @@
 // src/hooks/useAppTheme.ts
-import { useEffect } from 'react';
-import { useCookie } from '../common/utils';
-// Define o tipo ColorScheme localmente, pois não é mais exportado pelo Mantine
+import { useEffect, useState } from 'react';
+import { load } from '@tauri-apps/plugin-store';
+
 type ColorScheme = 'light' | 'dark';
 
-/**
- * Hook customizado para gerenciar o tema da aplicação (claro/escuro).
- * Ele persiste o tema em um cookie e aplica as classes CSS correspondentes ao corpo do documento.
- * @returns Um objeto contendo o esquema de cores atual e uma função para defini-lo.
- */
 export function useAppTheme() {
-    // Usa o useCookie com a tipagem ColorScheme do Mantine.
-    // O valor padrão deve ser 'light' ou 'dark' para corresponder ao que nosso CSS gerencia.
-    const [colorScheme, setColorSchemeCookie] = useCookie<ColorScheme>('mantine-color-scheme', 'light');
+  const [colorScheme, setColorSchemeState] = useState<ColorScheme>('light');
 
-    // Efeito colateral para aplicar a classe de tema ao <body> do documento.
-    // Ele é executado sempre que o colorScheme muda.
-    useEffect(() => {
-        document.body.classList.remove('theme-light', 'theme-dark');
-        // Adiciona a classe de tema correspondente ao esquema de cores atual.
-        // Verificamos se é 'light' ou 'dark' para evitar 'auto' (que não tem classe CSS correspondente em nosso setup).
-        if (colorScheme === 'light' || colorScheme === 'dark') {
-            document.body.classList.add(`theme-${colorScheme}`);
+  // Load the theme from the Tauri store on mount
+  useEffect(() => {
+    async function loadTheme() {
+      try {
+        const store = await load('app-settings.dat');
+        const savedTheme = await store.get<string>('theme');
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+          setColorSchemeState(savedTheme);
         }
-    }, [colorScheme]); // Dependência: o efeito é re-executado quando colorScheme muda
+      } catch (e) {
+        console.error('Erro ao carregar tema do store:', e);
+      }
+    }
+    loadTheme();
+  }, []);
 
-    /**
-     * Função para definir o esquema de cores da aplicação.
-     * @param scheme 'light' para tema claro (branco), 'dark' para tema escuro (preto).
-     */
-    const setAppColorScheme = (scheme: ColorScheme) => {
-        // Apenas permite 'light' ou 'dark' para o cookie, pois nosso CSS só lida com isso.
-        if (scheme === 'light' || scheme === 'dark') {
-            setColorSchemeCookie(scheme); // Atualiza o cookie, o que dispara o useEffect acima
-        }
-    };
+  // Apply the theme class to <body> when colorScheme changes
+  useEffect(() => {
+    document.body.classList.remove('theme-light', 'theme-dark');
+    if (colorScheme === 'light' || colorScheme === 'dark') {
+      document.body.classList.add(`theme-${colorScheme}`);
+    }
+  }, [colorScheme]);
 
-    /**
-     * Função para alternar o esquema de cores entre 'light' e 'dark'.
-     */
-    const toggleAppColorScheme = () => {
-        setAppColorScheme(colorScheme === 'light' ? 'dark' : 'light');
-    };
+  // Function to set the theme and save it to the store
+  const setAppColorScheme = async (scheme: ColorScheme) => {
+    if (scheme === 'light' || scheme === 'dark') {
+      try {
+        const store = await load('app-settings.dat');
+        await store.set('theme', scheme);
+        await store.save();
+        setColorSchemeState(scheme);
+      } catch (e) {
+        console.error('Erro ao salvar tema no store:', e);
+      }
+    }
+  };
 
-    // Retorna o esquema de cores atual e as funções para alterá-lo.
-    return {
-        colorScheme, // TypeScript agora reconhecerá isso como ColorScheme do Mantine
-        setColorScheme: setAppColorScheme,
-        toggleColorScheme: toggleAppColorScheme,
-    };
+  // Function to toggle the theme
+  const toggleAppColorScheme = () => {
+    setAppColorScheme(colorScheme === 'light' ? 'dark' : 'light');
+  };
+
+  return {
+    colorScheme,
+    setColorScheme: setAppColorScheme,
+    toggleColorScheme: toggleAppColorScheme,
+  };
 }

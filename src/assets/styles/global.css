@@ -1,3 +1,17 @@
 #settings-view-none{
     display: none;
 }
+.theme-light {
+  --background-color: #ffffff;
+  --text-color: #000000;
+}
+
+.theme-dark {
+  --background-color: #1a1b1e;
+  --text-color: #ffffff;
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
