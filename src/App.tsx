@@ -3,7 +3,7 @@ import { useDisclosure, useHotkeys } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { isTauri } from '@tauri-apps/api/core';
 import * as tauriEvent from '@tauri-apps/api/event';
-import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import * as tauriLogger from '@tauri-apps/plugin-log';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { open } from '@tauri-apps/plugin-dialog'; // <-- Corrigido: Importando a função 'open' do plugin dialog
@@ -27,88 +27,108 @@ import FallbackAppRender from './views/FallbackErrorBoundary';
 import FallbackSuspense from './views/FallbackSuspense';
 import { text } from 'stream/consumers';
 import './assets/styles/global.css';
+import { MantineProvider } from '@mantine/core';
+import { theme } from './common/Mantinetheme'; // Importa o tema Mantine
+import { useAppTheme } from './common/useAppTheme';
 
-// imported views need to be added to the `views` list variable
+const SettingsPage = lazy(() => import('./views/Settings'));
+
 
 interface LinkView {
-    type: 'link'; // Discriminante: indica que é um link de navegação
+    type: 'link';
     component: (() => JSX.Element) | LazyExoticComponent<() => JSX.Element>;
     path: string;
     exact?: boolean;
     name: string;
     id: string;
-    className: string; 
+    className: string;
 }
 
 interface ActionButtonView {
-    type: 'action'; // Discriminante: indica que é um botão de ação
-    action: () => void; // Função a ser executada ao clicar no botão
+    type: 'action';
+    action: () => void;
     name: string;
     id: string;
-    className: string; 
-    // icon?: JSX.Element; Opcional: Você pode adicionar um ícone aqui se quiser ícones para botões de ação
+    className: string;
 }
 
-// O tipo `View` agora é uma união de `LinkView` e `ActionButtonView`
 type View = LinkView | ActionButtonView;
-// ---
 
-export default function App() { // Renomeado para 'App' para clareza
+export default function App() {
     const { t } = useTranslation();
-    // check if using custom titlebar to adjust other components
     const { usingCustomTitleBar } = useTauriContext();
 
-    // left sidebar ()
+    // NOVO: Use o hook customizado para gerenciar o tema
+    const { colorScheme, toggleColorScheme } = useAppTheme(); // colorScheme agora vem do nosso hook
+
     const views: View[] = [
         {
-            type: 'action', // <-- Novo item de ação na sidebar
+            type: 'action',
+            name: t('Settings'),
+            id: 'open-settings-btn',
+            className: `action-item action-btn ${classes.actionButton}`,
+            action: async () => {
+                try {
+                    const settingsWindow = await WebviewWindow.getByLabel('settings-window');
+                    if (settingsWindow) {
+                        await settingsWindow.setFocus(); // Usa setFocus() no objeto WebviewWindow
+                    } else {
+                        // O construtor WebviewWindow retorna um objeto WebviewWindow, não uma Promise
+                        const newWindow = new WebviewWindow('settings-window', {
+                            url: '/settings', // Esta URL é relativa ao devUrl ou frontendDist
+                            title: t('Settings'), // Título da nova janela
+                            width: 700,
+                            height: 600,
+                            minWidth: 600,
+                            minHeight: 500,
+                            center: true,
+                            resizable: true,
+                            decorations: true
+                            });
+                        }
+                } catch (e) {
+                    console.error('ERROR: Exceção síncrona ao tentar abrir/criar janela de configurações:', e);
+                }
+            }
+        },
+        {
+            type: 'action',
             name: t('Category'),
             id: 'category-btn',
             className: 'action-item action-btn',
             action: async () => {
-
+                
             }
         },
         {
-            type: 'action', // Indica que este item é um botão de ação
+            type: 'action',
             name: t('OpenFileSearcher'),
             id: 'file-search-btn',
             className: 'action-item action-btn',
-            action: async () => { // A função assíncrona que será executada ao clicar no botão
-                try {// Chama a função 'open' do plugin de diálogo para abrir o seletor de arquivos
+            action: async () => {
+                try {
                     const selected = await open({
-                        multiple: true, // Define se o usuário pode selecionar múltiplos arquivos (true = pode selecionar vários arquivos)
-                        title: t('Selectfiles'), // Título do diálogo, usando tradução
-                        directory: false, // Define se o usuário pode selecionar diretórios (false = apenas arquivos)
-                        filters: [ // Filtros opcionais para tipos de arquivo
-                            {
-                                name: 'Text Files',
-                                extensions: ['txt', 'md']
-                            },
-                            {
-                                name: 'Image Files',
-                                extensions: ['png', 'jpeg', 'jpg', 'gif']
-                            },
-                            {
-                                name: 'All Files',
-                                extensions: ['*'] // Permite todos os tipos de arquivo
-                            }
+                        multiple: true,
+                        title: t('Selectfiles'),
+                        directory: false,
+                        filters: [
+                            { name: 'Text Files', extensions: ['txt', 'md'] },
+                            { name: 'Image Files', extensions: ['png', 'jpeg', 'jpg', 'gif'] },
+                            { name: 'All Files', extensions: ['*'] }
                         ]
                     });
-                    // Verifica se um arquivo foi realmente selecionado (ou se o usuário cancelou)
                     if (selected) {
-                        // 'selected' pode ser uma string (caminho do arquivo) ou um array de strings se multiple: true
                         const filePath = Array.isArray(selected) ? selected[0] : selected;
                         notifications.show({
                             title: t('Success'),
-                            message: t('Fileselectedsuccess'), // Mensagem de sucesso
+                            message: t('Fileselectedsuccess'),
                             color: 'green',
                             autoClose: 3000,
                         });
                     } else {
                         notifications.show({
                             title: t('canceled'),
-                            message: t('opercanceled'), // Mensagem se a seleção for cancelada
+                            message: t('opercanceled'),
                             color: 'blue',
                             autoClose: 2000,
                         });
@@ -123,14 +143,18 @@ export default function App() { // Renomeado para 'App' para clareza
                 }
             }
         },
-
+        {
+            type: 'link',
+            component: SettingsPage,
+            path: '/settings',
+            name: t('Settings'),
+            id: 'settings-view-none',
+            className: '',
+        },
     ];
 
-    const { toggleColorScheme } = useMantineColorScheme();
-    const colorScheme = useComputedColorScheme();
-    useHotkeys([['ctrl+J', toggleColorScheme]]);
+    useHotkeys([['ctrl+J', toggleColorScheme]]); // Usa o toggleColorScheme do nosso hook customizado
 
-    // opened is for mobile nav
     const [mobileNavOpened, { toggle: toggleMobileNav }] = useDisclosure();
 
     const [desktopNavOpenedCookie, setDesktopNavOpenedCookie] = useCookie('desktop-nav-opened', 'true');
@@ -138,7 +162,6 @@ export default function App() { // Renomeado para 'App' para clareza
     const toggleDesktopNav = () => setDesktopNavOpenedCookie(o => o === 'true' ? 'false' : 'true');
 
     const [scroller, setScroller] = useState<HTMLElement | null>(null);
-    // load preferences using localForage
     const [footersSeen, setFootersSeen, footersSeenLoading] = useLocalForage('footersSeen', {});
 
     const [navbarClearance, setNavbarClearance] = useState(0);
@@ -147,8 +170,6 @@ export default function App() { // Renomeado para 'App' para clareza
         if (footerRef.current) setNavbarClearance(footerRef.current.clientHeight);
     }, [footersSeen]);
 
-
-    // Tauri event listeners (run on mount)
     if (isTauri()) {
         useEffect(() => {
             const promise = tauriEvent.listen('longRunningThread', ({ payload }: { payload: any }) => {
@@ -156,11 +177,9 @@ export default function App() { // Renomeado para 'App' para clareza
             });
             return () => { promise.then(unlisten => unlisten()) };
         }, []);
-        // system tray events
         useEffect(() => {
             const promise = tauriEvent.listen('systemTray', ({ payload, ...eventObj }: { payload: { message: string } }) => {
                 tauriLogger.info(payload.message);
-                // for debugging purposes only
                 notifications.show({
                     title: '[DEBUG] System Tray Event',
                     message: payload.message
@@ -169,11 +188,11 @@ export default function App() { // Renomeado para 'App' para clareza
             return () => { promise.then(unlisten => unlisten()) };
         }, []);
 
-        // update checker
         useEffect(() => {
             (async () => {
                 const update = await tauriUpdater.check();
                 if (update) {
+                    // Usa o colorScheme do nosso hook customizado para a cor da notificação
                     const color = colorScheme === 'dark' ? 'teal' : 'teal.8';
                     notifications.show({
                         id: 'UPDATE_NOTIF',
@@ -185,15 +204,10 @@ export default function App() { // Renomeado para 'App' para clareza
                                 switch (event.event) {
                                     case 'Started':
                                         notifications.show({ title: t('installingUpdate', { v: update.version }), message: t('relaunchMsg'), autoClose: false });
-                                        // contentLength = event.data.contentLength;
-                                        // tauriLogger.info(`started downloading ${event.data.contentLength} bytes`);
                                         break;
                                     case 'Progress':
-                                        // downloaded += event.data.chunkLength;
-                                        // tauriLogger.info(`downloaded ${downloaded} from ${contentLength}`);
                                         break;
                                     case 'Finished':
-                                        // tauriLogger.info('download finished');
                                         break;
                                 }
                             }).then(relaunch)}>{t('installAndRelaunch')}</Button>
@@ -204,7 +218,6 @@ export default function App() { // Renomeado para 'App' para clareza
             })()
         }, []);
 
-        // Handle additional app launches (url, etc.)
         useEffect(() => {
             const promise = tauriEvent.listen('newInstance', async ({ payload, ...eventObj }: { payload: { args: string[], cwd: string } }) => {
                 const appWindow = getCurrentWebviewWindow();
@@ -226,51 +239,47 @@ export default function App() { // Renomeado para 'App' para clareza
     }
 
     function NavLinks() {
-        // TODO: useHotkeys and abstract this
         return views.map((view, index) => {
-            if (view.type === 'link') { // Se for um link de navegação
+            if (view.type === 'link') {
+                const combinedClassNames = `${classes.navLink || ''} ${view.className || ''}`.trim();
                 return (
                     <NavLink
-                    
+                        id={view.id}
+                        className={combinedClassNames}
                         to={view.path}
                         key={index}
                         end={view.exact}
                         onClick={() => toggleMobileNav()}
                     >
-                        {/* TODO: Icons */}
                         <Group><Text>{view.name}</Text></Group>
                     </NavLink>
                 );
             } else if (view.type === 'action') {
-                const combinedClassNames = `${classes.actionButton || ''} ${view.className || ''}`.trim(); // Se for um botão de ação
+                const combinedClassNames = `${classes.actionButton || ''} ${view.className || ''}`.trim();
                 return (
                     <Button
                         id={view.id}
-                        className={combinedClassNames} 
+                        className={combinedClassNames}
                         onClick={() => {
-                            view.action(); // Executa a ação
-                            toggleMobileNav(); // Fecha a sidebar móvel após a ação
+                            view.action();
+                            toggleMobileNav();
                         }}
-                        variant="subtle" // Estilo sutil para parecer um link
-                        fullWidth // Ocupa a largura total
-                        justify="flex-start" // Alinha o texto à esquerda
-                    
+                        variant="subtle"
+                        fullWidth
+                        justify="flex-start"
                     >
-                        {/* TODO: Icons for action buttons */}
                         <Group><Text>{view.name}</Text></Group>
                     </Button>
                 );
             }
-            return null; // Retorna null para tipos desconhecidos
+            return null;
         });
     }
 
     const FOOTER_KEY = 'footer[0]';
     const showFooter = FOOTER_KEY && !footersSeenLoading && !(FOOTER_KEY in footersSeen);
-    // assume key is always available
     const footerText = t(FOOTER_KEY);
 
-    // hack for global styling the vertical simplebar based on state
     useEffect(() => {
         const el = document.getElementsByClassName('simplebar-vertical')[0];
         if (el instanceof HTMLElement) {
@@ -280,10 +289,15 @@ export default function App() { // Renomeado para 'App' para clareza
     }, [usingCustomTitleBar, showFooter]);
 
     return (
-        <>
+        <MantineProvider
+            // Aplica o tema personalizado aqui (se você ainda estiver usando-o para componentes Mantine)
+            theme={theme}
+            // MantineProvider agora usa o colorScheme do nosso hook customizado como padrão
+            defaultColorScheme={colorScheme}
+            // Não precisamos mais do onColorSchemeChange aqui, pois o hook customizado já gerencia o cookie
+        >
             {usingCustomTitleBar && <TitleBar />}
             <AppShell
-            
                 padding="md"
                 navbar={{
                     width: 200,
@@ -309,13 +323,11 @@ export default function App() { // Renomeado para 'App' para clareza
                             onError={e => tauriLogger.error(e.message)}
                         >
                             <Routes>
-                                {/* Redireciona para a primeira view se nenhuma rota for especificada */}
                                 {views[0] !== undefined && views[0].type === 'link' && (
                                     <Route path="/" element={<Navigate to={views[0].path} />} />
                                 )}
-                                {/* Renderiza todas as views com base na lista 'views' */}
                                 {views.map((view, index) => (
-                                    view.type === 'link' && ( // Apenas links de navegação são renderizados como rotas
+                                    view.type === 'link' && (
                                         <Route
                                             key={index}
                                             path={view.path}
@@ -350,6 +362,6 @@ export default function App() { // Renomeado para 'App' para clareza
                     </AppShell.Section>
                 </AppShell.Navbar>
             </AppShell>
-        </>
+        </MantineProvider>
     );
 }

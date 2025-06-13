@@ -69,6 +69,18 @@
         "decorations": true,
         "alwaysOnTop": false,
         "useHttpsScheme": true
+      },
+      {
+        "label": "settings-window",
+        "title": "Configurações",
+        "width": 900,
+        "height": 700,
+        "minWidth": 600,
+        "minHeight": 500,
+        "center": true,
+        "resizable": true,
+        "decorations": true,
+        "url": "index.html"
       }
     ],
     "trayIcon": {

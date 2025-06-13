@@ -21,6 +21,7 @@ mod utils;
 use tray_icon::{create_tray_icon, tray_update_lang, TrayState};
 use utils::long_running_thread;
 
+
 #[derive(Clone, Serialize)]
 struct SingleInstancePayload {
   args: Vec<String>,
@@ -68,6 +69,7 @@ pub fn run() {
     .plugin(tauri_plugin_notification::init())
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_fs::init())
+
     // custom commands
     .invoke_handler(tauri::generate_handler![tray_update_lang, process_file,])
     // allow only one instance and propagate args and cwd to existing instance
