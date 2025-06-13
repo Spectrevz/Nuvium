@@ -15,7 +15,7 @@ export const resources = {
 	fr: {
 		[defaultNS]: fr
 	},
-	'pt-br': {
+	'pt-BR': {
 		[defaultNS]: ptBR
 	}
 }

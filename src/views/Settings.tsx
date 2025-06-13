@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 // REMOVIDO: BsMoonStarsFill e IoSunnySharp não são mais usados nesta abordagem de botões
 import LanguageHeaders from '../components/LanguageHeaders';
 import { useAppTheme } from '../common/useAppTheme'; // NOVO: Importa o hook customizado de tema
-
+import packageJson from '../../package.json';
 /**
  * Componente da página de configurações.
  * Este componente será carregado dentro da nova janela Tauri.
@@ -58,14 +58,14 @@ export default function SettingsPage() {
                     {/* Conteúdo da aba "Languages" */}
                     <Tabs.Panel value="languages" p="md">
                         <Title order={3} mb="sm">{t('Select Language')}</Title>
-                        <LanguageHeaders /> {/* Reutiliza seu componente de seleção de idioma */}
+                        <LanguageHeaders />
                     </Tabs.Panel>
 
                     {/* Conteúdo da aba "About" */}
                     <Tabs.Panel value="about" p="md">
                         <Title order={3} mb="sm">{t('About Nuvium')}</Title> {/* MODIFICADO: 'About Nuvium' para 'About this App' para ser mais genérico */}
                         <Text>{t('AppDescription')}</Text>
-                        <Text mt="sm">{t('Version')}: 0.0.1</Text>
+                        <Text mt="sm">{t('Version')}: {packageJson.version}</Text>
                         <Text>{t('Developed by')}: Spectrevz</Text>
                     </Tabs.Panel>
                 </Tabs>

@@ -8,7 +8,7 @@ import * as tauriLogger from '@tauri-apps/plugin-log';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { open } from '@tauri-apps/plugin-dialog'; // <-- Corrigido: Importando a função 'open' do plugin dialog
 import * as tauriUpdater from '@tauri-apps/plugin-updater';
-import { JSX, lazy, LazyExoticComponent, Suspense, useEffect, useRef, useState } from 'react';
+import { JSX, lazy, LazyExoticComponent, Suspense, useEffect, useRef, useState, useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { BsMoonStarsFill } from 'react-icons/bs';
@@ -28,8 +28,9 @@ import FallbackSuspense from './views/FallbackSuspense';
 import { text } from 'stream/consumers';
 import './assets/styles/global.css';
 import { MantineProvider } from '@mantine/core';
-import { theme } from './common/Mantinetheme'; // Importa o tema Mantine
+import { theme } from './common/MantineTheme'; // Importa o tema Mantine
 import { useAppTheme } from './common/useAppTheme';
+import { Window } from '@tauri-apps/api/window';
 
 const SettingsPage = lazy(() => import('./views/Settings'));
 
@@ -58,8 +59,24 @@ export default function App() {
     const { t } = useTranslation();
     const { usingCustomTitleBar } = useTauriContext();
 
-    // NOVO: Use o hook customizado para gerenciar o tema
-    const { colorScheme, toggleColorScheme } = useAppTheme(); // colorScheme agora vem do nosso hook
+    const { colorScheme, toggleColorScheme } = useAppTheme();
+
+    const [currentWindowLabel, setCurrentWindowLabel] = useState<string | null>(null);
+
+    useEffect(() => {
+        const getLabel = async () => {
+            const currentWindow = Window.getCurrent();
+            const label = await currentWindow.label;
+            setCurrentWindowLabel(label);
+            console.log('LOG: Janela atual label:', label);
+        };
+        if (isTauri()) {
+            getLabel();
+        } else {
+            setCurrentWindowLabel('main');
+        }
+    }, []);
+
 
     const views: View[] = [
         {
@@ -68,15 +85,21 @@ export default function App() {
             id: 'open-settings-btn',
             className: `action-item action-btn ${classes.actionButton}`,
             action: async () => {
+                console.log('LOG: Botão "OpenSettings" clicado.');
+
                 try {
                     const settingsWindow = await WebviewWindow.getByLabel('settings-window');
+                    console.log('LOG: Resultado de getByLabel:', settingsWindow);
+
                     if (settingsWindow) {
-                        await settingsWindow.setFocus(); // Usa setFocus() no objeto WebviewWindow
+                        console.log('LOG: Janela de configurações já existe. Tentando focar.');
+                        await settingsWindow.setFocus();
                     } else {
-                        // O construtor WebviewWindow retorna um objeto WebviewWindow, não uma Promise
+                        console.log('LOG: Janela de configurações NÃO existe. Tentando criar nova janela.');
+                        
                         const newWindow = new WebviewWindow('settings-window', {
-                            url: '/settings', // Esta URL é relativa ao devUrl ou frontendDist
-                            title: t('Settings'), // Título da nova janela
+                            url: '/settings',
+                            title: t('Settings'),
                             width: 700,
                             height: 600,
                             minWidth: 600,
@@ -84,10 +107,16 @@ export default function App() {
                             center: true,
                             resizable: true,
                             decorations: true
-                            });
-                        }
+                        });
+                    }
                 } catch (e) {
-                    console.error('ERROR: Exceção síncrona ao tentar abrir/criar janela de configurações:', e);
+                    console.error('ERRO GERAL: Exceção síncrona ao tentar abrir/criar janela de configurações:', e);
+                    notifications.show({
+                        title: t('Error'),
+                        message: `ERRO GERAL: ${JSON.stringify(e)}`,
+                        color: 'red',
+                        autoClose: 5000,
+                    });
                 }
             }
         },
@@ -97,7 +126,7 @@ export default function App() {
             id: 'category-btn',
             className: 'action-item action-btn',
             action: async () => {
-                
+                // Sua lógica existente aqui
             }
         },
         {
@@ -143,17 +172,19 @@ export default function App() {
                 }
             }
         },
+        // A rota SettingsPage será carregada dentro da nova janela
+        // O App.tsx na nova janela renderizará apenas o conteúdo da rota /settings, sem o AppShell.Navbar/Aside
         {
-            type: 'link',
+            type: 'link', // Mantemos SettingsPage como um link para o React Router
             component: SettingsPage,
             path: '/settings',
-            name: t('Settings'),
-            id: 'settings-view-none',
-            className: '',
+            name: t('Settings'), // Este 'Settings' é apenas um placeholder de nome para a view, não aparecerá como link na main window
+            id: 'settings-view-internal-route', // ID diferente para clareza
+            className: '', // Pode ser vazio ou ter classes específicas
         },
     ];
 
-    useHotkeys([['ctrl+J', toggleColorScheme]]); // Usa o toggleColorScheme do nosso hook customizado
+    useHotkeys([['ctrl+J', toggleColorScheme]]);
 
     const [mobileNavOpened, { toggle: toggleMobileNav }] = useDisclosure();
 
@@ -166,153 +197,53 @@ export default function App() {
 
     const [navbarClearance, setNavbarClearance] = useState(0);
     const footerRef = useRef<HTMLElement | null>(null);
-    useEffect(() => {
-        if (footerRef.current) setNavbarClearance(footerRef.current.clientHeight);
-    }, [footersSeen]);
 
-    if (isTauri()) {
-        useEffect(() => {
-            const promise = tauriEvent.listen('longRunningThread', ({ payload }: { payload: any }) => {
-                tauriLogger.info(payload.message);
-            });
-            return () => { promise.then(unlisten => unlisten()) };
-        }, []);
-        useEffect(() => {
-            const promise = tauriEvent.listen('systemTray', ({ payload, ...eventObj }: { payload: { message: string } }) => {
-                tauriLogger.info(payload.message);
-                notifications.show({
-                    title: '[DEBUG] System Tray Event',
-                    message: payload.message
-                });
-            });
-            return () => { promise.then(unlisten => unlisten()) };
-        }, []);
-
-        useEffect(() => {
-            (async () => {
-                const update = await tauriUpdater.check();
-                if (update) {
-                    // Usa o colorScheme do nosso hook customizado para a cor da notificação
-                    const color = colorScheme === 'dark' ? 'teal' : 'teal.8';
-                    notifications.show({
-                        id: 'UPDATE_NOTIF',
-                        title: t('updateAvailable', { v: update.version }),
-                        color,
-                        message: <>
-                            <Text>{update.body}</Text>
-                            <Button color={color} style={{ width: '100%' }} onClick={() => update.downloadAndInstall(event => {
-                                switch (event.event) {
-                                    case 'Started':
-                                        notifications.show({ title: t('installingUpdate', { v: update.version }), message: t('relaunchMsg'), autoClose: false });
-                                        break;
-                                    case 'Progress':
-                                        break;
-                                    case 'Finished':
-                                        break;
-                                }
-                            }).then(relaunch)}>{t('installAndRelaunch')}</Button>
-                        </>,
-                        autoClose: false
-                    });
-                }
-            })()
-        }, []);
-
-        useEffect(() => {
-            const promise = tauriEvent.listen('newInstance', async ({ payload, ...eventObj }: { payload: { args: string[], cwd: string } }) => {
-                const appWindow = getCurrentWebviewWindow();
-                if (!(await appWindow.isVisible())) await appWindow.show();
-
-                if (await appWindow.isMinimized()) {
-                    await appWindow.unminimize();
-                    await appWindow.setFocus();
-                }
-
-                let args = payload?.args;
-                let cwd = payload?.cwd;
-                if (args?.length > 1) {
-
-                }
-            });
-            return () => { promise.then(unlisten => unlisten()) };
-        }, []);
-    }
-
-    function NavLinks() {
-        return views.map((view, index) => {
-            if (view.type === 'link') {
-                const combinedClassNames = `${classes.navLink || ''} ${view.className || ''}`.trim();
-                return (
-                    <NavLink
-                        id={view.id}
-                        className={combinedClassNames}
-                        to={view.path}
-                        key={index}
-                        end={view.exact}
-                        onClick={() => toggleMobileNav()}
-                    >
-                        <Group><Text>{view.name}</Text></Group>
-                    </NavLink>
-                );
-            } else if (view.type === 'action') {
-                const combinedClassNames = `${classes.actionButton || ''} ${view.className || ''}`.trim();
-                return (
-                    <Button
-                        id={view.id}
-                        className={combinedClassNames}
-                        onClick={() => {
-                            view.action();
-                            toggleMobileNav();
-                        }}
-                        variant="subtle"
-                        fullWidth
-                        justify="flex-start"
-                    >
-                        <Group><Text>{view.name}</Text></Group>
-                    </Button>
-                );
-            }
-            return null;
-        });
-    }
-
-    const FOOTER_KEY = 'footer[0]';
-    const showFooter = FOOTER_KEY && !footersSeenLoading && !(FOOTER_KEY in footersSeen);
-    const footerText = t(FOOTER_KEY);
+    // Definição de showFooter usando useMemo para garantir memoização e tipagem consistente
+    const FOOTER_KEY = 'footer[0]'; // Mantido aqui para clareza
+    const showFooter = useMemo(() => {
+        return FOOTER_KEY && !footersSeenLoading && !(FOOTER_KEY in footersSeen);
+    }, [FOOTER_KEY, footersSeenLoading, footersSeen]); // Dependências para useMemo
 
     useEffect(() => {
+        // Ajusta a margem do simplebar apenas na janela principal
         const el = document.getElementsByClassName('simplebar-vertical')[0];
-        if (el instanceof HTMLElement) {
+        // Adicionada uma verificação robusta para 'el' antes de acessar 'style'
+        if (currentWindowLabel === 'main' && el instanceof HTMLElement) {
             el.style.marginTop = usingCustomTitleBar ? '100px' : '70px';
             el.style.marginBottom = showFooter ? '50px' : '0px';
         }
-    }, [usingCustomTitleBar, showFooter]);
+    }, [usingCustomTitleBar, showFooter, currentWindowLabel, FOOTER_KEY]); // FOOTER_KEY adicionado para completar as dependências
+
+    // Condicionalmente renderiza a AppShell.Navbar e AppShell.Aside
+    const shouldRenderNavbar = currentWindowLabel === 'main';
+    const shouldRenderAside = currentWindowLabel === 'main';
 
     return (
         <MantineProvider
-            // Aplica o tema personalizado aqui (se você ainda estiver usando-o para componentes Mantine)
             theme={theme}
-            // MantineProvider agora usa o colorScheme do nosso hook customizado como padrão
             defaultColorScheme={colorScheme}
-            // Não precisamos mais do onColorSchemeChange aqui, pois o hook customizado já gerencia o cookie
         >
-            {usingCustomTitleBar && <TitleBar />}
+            {/* Renderiza TitleBar condicionalmente */}
+            {usingCustomTitleBar && shouldRenderNavbar && <TitleBar />}
             <AppShell
                 padding="md"
-                navbar={{
+                // Renderiza Navbar condicionalmente
+                navbar={shouldRenderNavbar ? {
                     width: 200,
                     breakpoint: 'sm',
                     collapsed: { mobile: !mobileNavOpened, desktop: !desktopNavOpened }
-                }}
-                aside={{
+                } : undefined}
+                // Renderiza Aside condicionalmente
+                aside={shouldRenderAside ? {
                     width: 300,
                     breakpoint: 'md',
                     collapsed: { desktop: false, mobile: true }
-                }}
+                } : undefined}
                 className={classes.appShell}
             >
+                {/* O conteúdo principal da AppShell.Main sempre é renderizado */}
                 <AppShell.Main>
-                    {usingCustomTitleBar && <Space h="xl" />}
+                    {usingCustomTitleBar && shouldRenderNavbar && <Space h="xl" />}
                     <SimpleBar
                         scrollableNodeProps={{ ref: setScroller }}
                         autoHide={false}
@@ -323,11 +254,14 @@ export default function App() {
                             onError={e => tauriLogger.error(e.message)}
                         >
                             <Routes>
-                                {views[0] !== undefined && views[0].type === 'link' && (
+                                {/* A rota principal do aplicativo principal deve redirecionar para uma rota de dashboard/home */}
+                                {views[0] !== undefined && views[0].type === 'link' && currentWindowLabel === 'main' && (
                                     <Route path="/" element={<Navigate to={views[0].path} />} />
                                 )}
-                                {views.map((view, index) => (
-                                    view.type === 'link' && (
+                                {/* Renderiza apenas as rotas de link aqui */}
+                                {views
+                                    .filter(view => view.type === 'link')
+                                    .map((view, index) => (
                                         <Route
                                             key={index}
                                             path={view.path}
@@ -337,8 +271,7 @@ export default function App() {
                                                 </Suspense>
                                             }
                                         />
-                                    )
-                                ))}
+                                    ))}
                             </Routes>
                         </ErrorBoundary>
 
@@ -347,20 +280,64 @@ export default function App() {
                     </SimpleBar>
                 </AppShell.Main>
 
-                <AppShell.Navbar
-                    className={classes.titleBarAdjustedHeight}
-                    h="100%"
-                    w={{ sm: 200 }}
-                    p="xs"
-                    hidden={!mobileNavOpened}
-                >
-                    <AppShell.Section grow>
-                        <NavLinks />
-                    </AppShell.Section>
-                    <AppShell.Section>
-                        <Space h={navbarClearance} />
-                    </AppShell.Section>
-                </AppShell.Navbar>
+                {/* Renderiza AppShell.Navbar condicionalmente */}
+                {shouldRenderNavbar && (
+                    <AppShell.Navbar
+                        className={classes.titleBarAdjustedHeight}
+                        h="100%"
+                        w={{ sm: 200 }}
+                        p="xs"
+                        hidden={!mobileNavOpened}
+                    >
+                        <AppShell.Section grow>
+                            {/* Renderiza apenas os links de navegação para a janela principal */}
+                            {views
+                                .filter(view => view.type === 'action' || view.type === 'link') // Inclui ambos para a navegação
+                                .map((view, index) => {
+                                    if (view.type === 'link' && view.path === '/settings') {
+                                        return null; // Não renderiza o link Settings na Navbar
+                                    }
+                                    if (view.type === 'link') {
+                                        const combinedClassNames = `${classes.navLink || ''} ${view.className || ''}`.trim();
+                                        return (
+                                            <NavLink
+                                                id={view.id}
+                                                className={combinedClassNames}
+                                                to={view.path}
+                                                key={index}
+                                                end={view.exact}
+                                                onClick={() => toggleMobileNav()}
+                                            >
+                                                <Group><Text>{view.name}</Text></Group>
+                                            </NavLink>
+                                        );
+                                    } else if (view.type === 'action') {
+                                        const combinedClassNames = `${classes.actionButton || ''} ${view.className || ''}`.trim();
+                                        return (
+                                            <Button
+                                                id={view.id}
+                                                className={combinedClassNames}
+                                                onClick={() => {
+                                                    view.action();
+                                                    toggleMobileNav();
+                                                }}
+                                                variant="subtle"
+                                                fullWidth
+                                                justify="flex-start"
+                                                key={index} // Adicionado key para elementos mapeados
+                                            >
+                                                <Group><Text>{view.name}</Text></Group>
+                                            </Button>
+                                        );
+                                    }
+                                    return null;
+                                })}
+                        </AppShell.Section>
+                        <AppShell.Section>
+                            <Space h={navbarClearance} />
+                        </AppShell.Section>
+                    </AppShell.Navbar>
+                )}
             </AppShell>
         </MantineProvider>
     );
