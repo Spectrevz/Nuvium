@@ -1,4 +1,3 @@
-// src/App.tsx
 import { AppShell, Burger, Button, Group, Space, Text, MantineProvider } from '@mantine/core';
 import { useDisclosure, useHotkeys } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
@@ -27,6 +26,9 @@ import FallbackSuspense from './views/FallbackSuspense';
 import './assets/styles/global.css';
 import { theme } from './common/MantineTheme';
 import { useAppTheme } from './common/useAppTheme';
+import CustomButton from './assets/buttons/categorybtn'; // Import the custom button
+import Settingsbtn from './assets/buttons/settingsbtn'; // Import the custom button
+
 
 const SettingsPage = lazy(() => import('./views/Settings'));
 
@@ -70,7 +72,6 @@ export default function App() {
     }
   }, []);
 
-  // Listen for app_settings_changed events in the main window
   useEffect(() => {
     if (currentWindowLabel === 'main') {
       console.log('App.tsx: Setting up app_settings_changed listener in main window');
@@ -303,22 +304,49 @@ export default function App() {
                     );
                   } else if (view.type === 'action') {
                     const combinedClassNames = `${classes.actionButton || ''} ${view.className || ''}`.trim();
-                    return (
-                      <Button
-                        id={view.id}
-                        className={combinedClassNames}
-                        onClick={() => {
-                          view.action();
-                          toggleMobileNav();
-                        }}
-                        variant="subtle"
-                        fullWidth
-                        justify="flex-start"
-                        key={index}
-                      >
-                        <Group><Text>{view.name}</Text></Group>
-                      </Button>
-                    );
+                    if (view.id === 'open-settings-btn') {
+                      // Use SettingsButton for the "Settings" action
+                      return (
+                        <Settingsbtn
+                          key={index}
+                          text={view.name}
+                          onClick={() => {
+                            view.action();
+                            toggleMobileNav();
+                          }}
+                        />
+                      );
+                    } else if (view.id === 'category-btn') {
+                      // Use CustomButton for the "Category" action
+                      return (
+                        <CustomButton
+                          key={index}
+                          text={view.name}
+                          onClick={() => {
+                            view.action();
+                            toggleMobileNav();
+                          }}
+                        />
+                      );
+                    } else {
+                      // Use Mantine Button for other actions
+                      return (
+                        <Button
+                          id={view.id}
+                          className={combinedClassNames}
+                          onClick={() => {
+                            view.action();
+                            toggleMobileNav();
+                          }}
+                          variant="subtle"
+                          fullWidth
+                          justify="flex-start"
+                          key={index}
+                        >
+                          <Group><Text>{view.name}</Text></Group>
+                        </Button>
+                      );
+                    }
                   }
                   return null;
                 })}
