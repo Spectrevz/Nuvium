@@ -7,6 +7,12 @@
     "core:default",
     "opener:default",
     "dialog:allow-open",
-    "core:webview:allow-create-webview-window"
+    "core:webview:allow-create-webview-window",
+    "core:window:allow-close",
+    "store:allow-get",
+    "store:allow-set",
+    "store:allow-save",
+    "core:event:allow-emit",
+    "store:default"
   ]
 }

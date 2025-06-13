@@ -1,19 +1,21 @@
-import { ActionIcon, AppShell, Burger, Button, Group, Space, Text, useComputedColorScheme, useMantineColorScheme } from '@mantine/core';
+import { AppShell, Burger, Button, Group, Space, Text, MantineProvider } from '@mantine/core';
 import { useDisclosure, useHotkeys } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { isTauri } from '@tauri-apps/api/core';
 import * as tauriEvent from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { Window } from '@tauri-apps/api/window';
 import * as tauriLogger from '@tauri-apps/plugin-log';
 import { relaunch } from '@tauri-apps/plugin-process';
-import { open } from '@tauri-apps/plugin-dialog'; // <-- Corrigido: Importando a função 'open' do plugin dialog
+import { open } from '@tauri-apps/plugin-dialog';
 import * as tauriUpdater from '@tauri-apps/plugin-updater';
 import { JSX, lazy, LazyExoticComponent, Suspense, useEffect, useRef, useState, useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
-import { BsMoonStarsFill } from 'react-icons/bs';
-import { ImCross } from 'react-icons/im';
-import { IoSunnySharp } from 'react-icons/io5';
+// Remover imports de ícones se não estiverem sendo usados, para evitar warnings
+// import { BsMoonStarsFill } from 'react-icons/bs';
+// import { ImCross } from 'react-icons/im';
+// import { IoSunnySharp } from 'react-icons/io5';
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom';
 import SimpleBar from 'simplebar-react';
 import 'simplebar-react/dist/simplebar.min.css';
@@ -25,12 +27,12 @@ import { useTauriContext } from './tauri/TauriProvider';
 import { TitleBar } from './tauri/TitleBar';
 import FallbackAppRender from './views/FallbackErrorBoundary';
 import FallbackSuspense from './views/FallbackSuspense';
-import { text } from 'stream/consumers';
+// Remover import de 'text' se não estiver sendo usado
+// import { text } from 'stream/consumers';
 import './assets/styles/global.css';
-import { MantineProvider } from '@mantine/core';
-import { theme } from './common/MantineTheme'; // Importa o tema Mantine
-import { useAppTheme } from './common/useAppTheme';
-import { Window } from '@tauri-apps/api/window';
+
+import { theme } from './common/MantineTheme'; // Assumindo este é o caminho correto para o seu tema
+import { useAppTheme } from './common/useAppTheme'; // Assumindo este é o caminho correto para o seu hook useAppTheme
 
 const SettingsPage = lazy(() => import('./views/Settings'));
 
@@ -56,10 +58,15 @@ interface ActionButtonView {
 type View = LinkView | ActionButtonView;
 
 export default function App() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { usingCustomTitleBar } = useTauriContext();
 
-    const { colorScheme, toggleColorScheme } = useAppTheme();
+    const { colorScheme, setColorScheme } = useAppTheme(); // Pega o esquema de cores e o setter do hook customizado
+
+    // Função para alternar o esquema de cores
+    const toggleColorScheme = () => {
+        setColorScheme(colorScheme === 'dark' ? 'light' : 'dark');
+    };
 
     const [currentWindowLabel, setCurrentWindowLabel] = useState<string | null>(null);
 
@@ -68,7 +75,6 @@ export default function App() {
             const currentWindow = Window.getCurrent();
             const label = await currentWindow.label;
             setCurrentWindowLabel(label);
-            console.log('LOG: Janela atual label:', label);
         };
         if (isTauri()) {
             getLabel();
@@ -77,6 +83,31 @@ export default function App() {
         }
     }, []);
 
+    // ESSENCIAL: ESCUTANDO EVENTOS DE MUDANÇA DE CONFIGURAÇÕES DE OUTRAS JANELAS
+    useEffect(() => {
+        // Apenas a janela principal precisa escutar para atualizar o tema e idioma globalmente
+        // A janela de configurações também carrega este App.tsx, mas não precisa escutar a si mesma
+        if (currentWindowLabel === 'main') {
+            console.log('App.tsx: Iniciando listener para app_settings_changed na janela principal.');
+            const unlisten = tauriEvent.listen('app_settings_changed', (event) => {
+                const { type, value } = event.payload as { type: string; value: any };
+                console.log('App.tsx: Evento app_settings_changed recebido:', event.payload);
+
+                if (type === 'theme') {
+                    setColorScheme(value); // Atualiza o tema da janela principal via useAppTheme
+                    console.log('App.tsx: Tema da janela principal atualizado para:', value);
+                } else if (type === 'language') {
+                    i18n.changeLanguage(value); // Atualiza o idioma da janela principal
+                    console.log('App.tsx: Idioma da janela principal atualizado para:', value);
+                }
+            });
+
+            return () => {
+                unlisten.then(f => f()); // Limpa o listener ao desmontar o componente
+                console.log('App.tsx: Listener de app_settings_changed desativado.');
+            };
+        }
+    }, [currentWindowLabel, setColorScheme, i18n]); // Dependências do useEffect
 
     const views: View[] = [
         {
@@ -111,12 +142,6 @@ export default function App() {
                     }
                 } catch (e) {
                     console.error('ERRO GERAL: Exceção síncrona ao tentar abrir/criar janela de configurações:', e);
-                    notifications.show({
-                        title: t('Error'),
-                        message: `ERRO GERAL: ${JSON.stringify(e)}`,
-                        color: 'red',
-                        autoClose: 5000,
-                    });
                 }
             }
         },
@@ -173,18 +198,17 @@ export default function App() {
             }
         },
         // A rota SettingsPage será carregada dentro da nova janela
-        // O App.tsx na nova janela renderizará apenas o conteúdo da rota /settings, sem o AppShell.Navbar/Aside
         {
             type: 'link', // Mantemos SettingsPage como um link para o React Router
             component: SettingsPage,
             path: '/settings',
-            name: t('Settings'), // Este 'Settings' é apenas um placeholder de nome para a view, não aparecerá como link na main window
-            id: 'settings-view-internal-route', // ID diferente para clareza
-            className: '', // Pode ser vazio ou ter classes específicas
+            name: t('Settings'),
+            id: 'settings-view-internal-route',
+            className: '',
         },
     ];
 
-    useHotkeys([['ctrl+J', toggleColorScheme]]);
+    useHotkeys([['ctrl+J', toggleColorScheme]]); // Usa o toggleColorScheme do useAppTheme
 
     const [mobileNavOpened, { toggle: toggleMobileNav }] = useDisclosure();
 
@@ -198,42 +222,36 @@ export default function App() {
     const [navbarClearance, setNavbarClearance] = useState(0);
     const footerRef = useRef<HTMLElement | null>(null);
 
-    // Definição de showFooter usando useMemo para garantir memoização e tipagem consistente
-    const FOOTER_KEY = 'footer[0]'; // Mantido aqui para clareza
+    // Definição de showFooter usando useMemo
+    const FOOTER_KEY = 'footer[0]';
     const showFooter = useMemo(() => {
         return FOOTER_KEY && !footersSeenLoading && !(FOOTER_KEY in footersSeen);
-    }, [FOOTER_KEY, footersSeenLoading, footersSeen]); // Dependências para useMemo
+    }, [FOOTER_KEY, footersSeenLoading, footersSeen]);
 
     useEffect(() => {
-        // Ajusta a margem do simplebar apenas na janela principal
         const el = document.getElementsByClassName('simplebar-vertical')[0];
-        // Adicionada uma verificação robusta para 'el' antes de acessar 'style'
         if (currentWindowLabel === 'main' && el instanceof HTMLElement) {
             el.style.marginTop = usingCustomTitleBar ? '100px' : '70px';
             el.style.marginBottom = showFooter ? '50px' : '0px';
         }
-    }, [usingCustomTitleBar, showFooter, currentWindowLabel, FOOTER_KEY]); // FOOTER_KEY adicionado para completar as dependências
+    }, [usingCustomTitleBar, showFooter, currentWindowLabel, FOOTER_KEY]);
 
-    // Condicionalmente renderiza a AppShell.Navbar e AppShell.Aside
     const shouldRenderNavbar = currentWindowLabel === 'main';
     const shouldRenderAside = currentWindowLabel === 'main';
 
     return (
         <MantineProvider
             theme={theme}
-            defaultColorScheme={colorScheme}
+            defaultColorScheme={colorScheme} // Usa o colorScheme do useAppTheme
         >
-            {/* Renderiza TitleBar condicionalmente */}
             {usingCustomTitleBar && shouldRenderNavbar && <TitleBar />}
             <AppShell
                 padding="md"
-                // Renderiza Navbar condicionalmente
                 navbar={shouldRenderNavbar ? {
                     width: 200,
                     breakpoint: 'sm',
                     collapsed: { mobile: !mobileNavOpened, desktop: !desktopNavOpened }
                 } : undefined}
-                // Renderiza Aside condicionalmente
                 aside={shouldRenderAside ? {
                     width: 300,
                     breakpoint: 'md',
@@ -241,7 +259,6 @@ export default function App() {
                 } : undefined}
                 className={classes.appShell}
             >
-                {/* O conteúdo principal da AppShell.Main sempre é renderizado */}
                 <AppShell.Main>
                     {usingCustomTitleBar && shouldRenderNavbar && <Space h="xl" />}
                     <SimpleBar
@@ -254,11 +271,9 @@ export default function App() {
                             onError={e => tauriLogger.error(e.message)}
                         >
                             <Routes>
-                                {/* A rota principal do aplicativo principal deve redirecionar para uma rota de dashboard/home */}
                                 {views[0] !== undefined && views[0].type === 'link' && currentWindowLabel === 'main' && (
                                     <Route path="/" element={<Navigate to={views[0].path} />} />
                                 )}
-                                {/* Renderiza apenas as rotas de link aqui */}
                                 {views
                                     .filter(view => view.type === 'link')
                                     .map((view, index) => (
@@ -271,7 +286,8 @@ export default function App() {
                                                 </Suspense>
                                             }
                                         />
-                                    ))}
+                                    )
+                                )}
                             </Routes>
                         </ErrorBoundary>
 
@@ -280,7 +296,6 @@ export default function App() {
                     </SimpleBar>
                 </AppShell.Main>
 
-                {/* Renderiza AppShell.Navbar condicionalmente */}
                 {shouldRenderNavbar && (
                     <AppShell.Navbar
                         className={classes.titleBarAdjustedHeight}
@@ -290,12 +305,11 @@ export default function App() {
                         hidden={!mobileNavOpened}
                     >
                         <AppShell.Section grow>
-                            {/* Renderiza apenas os links de navegação para a janela principal */}
                             {views
-                                .filter(view => view.type === 'action' || view.type === 'link') // Inclui ambos para a navegação
+                                .filter(view => view.type === 'action' || view.type === 'link')
                                 .map((view, index) => {
                                     if (view.type === 'link' && view.path === '/settings') {
-                                        return null; // Não renderiza o link Settings na Navbar
+                                        return null;
                                     }
                                     if (view.type === 'link') {
                                         const combinedClassNames = `${classes.navLink || ''} ${view.className || ''}`.trim();
@@ -324,7 +338,7 @@ export default function App() {
                                                 variant="subtle"
                                                 fullWidth
                                                 justify="flex-start"
-                                                key={index} // Adicionado key para elementos mapeados
+                                                key={index}
                                             >
                                                 <Group><Text>{view.name}</Text></Group>
                                             </Button>

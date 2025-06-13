@@ -1,75 +1,178 @@
-import {
-    Box,
-    Text,
-    Title,
-    Paper,
-    Tabs,
-    Group,
-    // REMOVIDO: ActionIcon, useMantineColorScheme, useComputedColorScheme não são mais necessários aqui
-    Button
-} from '@mantine/core';
+// src/views/Settings.tsx
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-// REMOVIDO: BsMoonStarsFill e IoSunnySharp não são mais usados nesta abordagem de botões
-import LanguageHeaders from '../components/LanguageHeaders';
-import { useAppTheme } from '../common/useAppTheme'; // NOVO: Importa o hook customizado de tema
+import {
+  Button,
+  Group,
+  Stack,
+  Text,
+  Box,
+  Title,
+  Paper,
+  Tabs,
+} from '@mantine/core';
+import { Window } from '@tauri-apps/api/window';
+import * as tauriEvent from '@tauri-apps/api/event';
+import { useAppTheme } from '../common/useAppTheme';
+import { resources, defaultLng } from '../translations/i18n';
 import packageJson from '../../package.json';
-/**
- * Componente da página de configurações.
- * Este componente será carregado dentro da nova janela Tauri.
- */
-export default function SettingsPage() {
-    const { t } = useTranslation();
-    // MODIFICADO: Agora você usa o seu hook useAppTheme
-    const { colorScheme, setColorScheme } = useAppTheme();
+import { load } from '@tauri-apps/plugin-store';
 
-    return (
-        <Box p="md"> {/* Container principal com preenchimento */}
-            <Paper withBorder shadow="sm" p="lg" radius="md"> {/* Um cartão para agrupar o conteúdo */}
-                <Title order={1} mb="md">{t('Settings')}</Title> {/* Título da página de configurações */}
+type ColorSchemeOption = 'light' | 'dark';
 
-                {/* Componente Tabs para navegação entre as seções */}
-                <Tabs defaultValue="theme"> {/* 'theme' é a aba padrão ao carregar */}
-                    <Tabs.List>
-                        <Tabs.Tab value="theme">{t('Theme')}</Tabs.Tab>
-                        <Tabs.Tab value="languages">{t('Languages')}</Tabs.Tab>
-                        <Tabs.Tab value="about">{t('About')}</Tabs.Tab>
-                    </Tabs.List>
+export default function Settings() {
+  const { t, i18n } = useTranslation();
+  const { colorScheme, setColorScheme } = useAppTheme();
 
-                    {/* Conteúdo da aba "Theme" */}
-                    <Tabs.Panel value="theme" p="md">
-                        <Title order={3} mb="sm">{t('Appearance')}</Title>
-                        <Group>
-                            <Text>{t('Choose theme')}:</Text> {/* MODIFICADO: Texto mais claro para a escolha de tema */}
-                            <Button
-                                onClick={() => setColorScheme('light')} // Chama setColorScheme do seu hook useAppTheme
-                                variant={colorScheme === 'light' ? 'filled' : 'outline'} // Usa colorScheme do seu hook
-                            >
-                                {t('White Theme')}
-                            </Button>
-                            <Button
-                                onClick={() => setColorScheme('dark')} // Chama setColorScheme do seu hook useAppTheme
-                                variant={colorScheme === 'dark' ? 'filled' : 'outline'} // Usa colorScheme do seu hook
-                            >
-                                {t('Black Theme')}
-                            </Button>
-                        </Group>
-                    </Tabs.Panel>
+  const [tempColorScheme, setTempColorScheme] = useState<ColorSchemeOption>(colorScheme);
+  const [tempLanguage, setTempLanguage] = useState(i18n.resolvedLanguage || defaultLng);
 
-                    {/* Conteúdo da aba "Languages" */}
-                    <Tabs.Panel value="languages" p="md">
-                        <Title order={3} mb="sm">{t('Select Language')}</Title>
-                        <LanguageHeaders />
-                    </Tabs.Panel>
+  const languageOptions = Object.keys(resources).map((lng) => ({
+    id: `lang-btn-${lng}`,
+    value: lng,
+    label: lng.toUpperCase(),
+  }));
 
-                    {/* Conteúdo da aba "About" */}
-                    <Tabs.Panel value="about" p="md">
-                        <Title order={3} mb="sm">{t('About Nuvium')}</Title> {/* MODIFICADO: 'About Nuvium' para 'About this App' para ser mais genérico */}
-                        <Text>{t('AppDescription')}</Text>
-                        <Text mt="sm">{t('Version')}: {packageJson.version}</Text>
-                        <Text>{t('Developed by')}: Spectrevz</Text>
-                    </Tabs.Panel>
-                </Tabs>
-            </Paper>
-        </Box>
-    );
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const store = await load('app-settings.dat');
+
+        const savedTheme = await store.get<string>('theme');
+        const savedLanguage = await store.get<string>('language');
+
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+          setTempColorScheme(savedTheme);
+          setColorScheme(savedTheme); // Aplica imediatamente ao carregar
+        }
+
+        if (savedLanguage && typeof savedLanguage === 'string') {
+          setTempLanguage(savedLanguage);
+          i18n.changeLanguage(savedLanguage); // Aplica imediatamente ao carregar
+        }
+      } catch (e) {
+        console.error('Erro ao carregar configurações:', e);
+      }
+    }
+
+    loadSettings();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      const store = await load('app-settings.dat');
+      await store.set('theme', tempColorScheme);
+      await store.set('language', tempLanguage);
+      await store.save();
+
+      tauriEvent.emit('app_settings_changed', { type: 'theme', value: tempColorScheme });
+      tauriEvent.emit('app_settings_changed', { type: 'language', value: tempLanguage });
+
+      // O setColorScheme e i18n.changeLanguage já foram chamados ao clicar
+      Window.getCurrent().close();
+    } catch (e) {
+      console.error('Erro ao salvar configurações:', e);
+    }
+  };
+
+  const handleCancel = () => {
+    Window.getCurrent().close();
+  };
+
+  return (
+    <Box p="md" style={{ position: 'relative', minHeight: '100vh' }}>
+      <Paper withBorder shadow="sm" p="lg" radius="md" style={{ paddingBottom: 80 }}>
+        <Title order={1} mb="md">{t('Settings')}</Title>
+
+        <Tabs defaultValue="theme">
+          <Tabs.List>
+            <Tabs.Tab value="theme">{t('Theme')}</Tabs.Tab>
+            <Tabs.Tab value="languages">{t('Languages')}</Tabs.Tab>
+            <Tabs.Tab value="about">{t('About')}</Tabs.Tab>
+          </Tabs.List>
+
+          <Tabs.Panel value="theme" p="md">
+            <Stack gap="md">
+              <Text size="xl" fw={700}>{t('Appearance')}</Text>
+              <Text size="md">{t('Choose theme')}</Text>
+              <Group gap="sm" mt="sm">
+                <Button
+                  variant={tempColorScheme === 'light' ? 'filled' : 'outline'}
+                  color={tempColorScheme === 'light' ? 'blue' : 'gray'}
+                  radius="xl"
+                  onClick={() => {
+                    setTempColorScheme('light');
+                    setColorScheme('light'); // muda tema na hora
+                  }}
+                >
+                  {t('White Theme') || 'White'}
+                </Button>
+                <Button
+                  variant={tempColorScheme === 'dark' ? 'filled' : 'outline'}
+                  color={tempColorScheme === 'dark' ? 'blue' : 'gray'}
+                  radius="xl"
+                  onClick={() => {
+                    setTempColorScheme('dark');
+                    setColorScheme('dark'); // muda tema na hora
+                  }}
+                >
+                  {t('Black Theme') || 'Black'}
+                </Button>
+              </Group>
+            </Stack>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="languages" p="md">
+            <Stack gap="md">
+              <Text size="xl" fw={700}>{t('Languages')}</Text>
+              <Text size="md">{t('Select Language')}</Text>
+              <Group gap="xs" mt="sm">
+                {languageOptions.map(({ id, value, label }) => (
+                  <Button
+                    key={id}
+                    id={id}
+                    variant={tempLanguage === value ? 'filled' : 'outline'}
+                    color={tempLanguage === value ? 'blue' : 'gray'}
+                    radius="xl"
+                    size="sm"
+                    onClick={() => {
+                      setTempLanguage(value);
+                      i18n.changeLanguage(value); // muda idioma na hora
+                    }}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </Group>
+            </Stack>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="about" p="md">
+            <Title order={3} mb="sm">{t('About Nuvium')}</Title>
+            <Text>{t('AppDescription')}</Text>
+            <Text mt="sm">{t('Version')}: {packageJson.version}</Text>
+            <Text>{t('Developed by')}: Spectrevz</Text>
+          </Tabs.Panel>
+        </Tabs>
+      </Paper>
+
+      <Group
+        justify="flex-end"
+        gap="md"
+        style={{
+          position: 'fixed',
+          bottom: 20,
+          right: 20,
+          zIndex: 1000,
+        }}
+      >
+        <Button variant="outline" color="gray" radius="xl" onClick={handleCancel}>
+          {t('Cancel')}
+        </Button>
+        <Button variant="filled" color="blue" radius="xl" onClick={handleSave}>
+          {t('Save')}
+        </Button>
+      </Group>
+    </Box>
+  );
 }
