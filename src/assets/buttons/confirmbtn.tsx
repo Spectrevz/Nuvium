@@ -6,7 +6,7 @@ interface ButtonProps {
   onClick: () => void;
 }
 
-const categorybtn: React.FC<ButtonProps> = ({ text, onClick }) => {
+const confirmbtn: React.FC<ButtonProps> = ({ text, onClick }) => {
   return (
     <StyledWrapper>
       <button onClick={onClick}>
@@ -82,4 +82,4 @@ const StyledWrapper = styled.div`
   }
 `;
 
-export default categorybtn;
+export default confirmbtn;

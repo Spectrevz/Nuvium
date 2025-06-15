@@ -26,7 +26,7 @@ import FallbackSuspense from './views/FallbackSuspense';
 import './assets/styles/global.css';
 import { theme } from './common/MantineTheme';
 import { useAppTheme } from './common/useAppTheme';
-import CustomButton from './assets/buttons/categorybtn'; // Import the custom button
+import Categorybtn from './assets/buttons/categorybtn'; // Import the custom button
 import Settingsbtn from './assets/buttons/settingsbtn'; // Import the custom button
 
 
@@ -319,7 +319,7 @@ export default function App() {
                     } else if (view.id === 'category-btn') {
                       // Use CustomButton for the "Category" action
                       return (
-                        <CustomButton
+                        <Categorybtn
                           key={index}
                           text={view.name}
                           onClick={() => {
