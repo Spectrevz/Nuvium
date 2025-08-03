@@ -1,5 +1,9 @@
-# Nuvium
+## 🚧Em desenvolvimento🚧
+Este projeto ainda está em desenvolvimento ativo. Algumas funcionalidades principais já estão implementadas. No entanto, outras estão em construção.
 
+⚠️ Atenção: a estrutura do código e a API podem sofrer mudanças até o lançamento da versão estável. Feedbacks e contribuições são bem-vindos!
+
+# Nuvium
 Nuvium é um aplicativo desktop moderno para gerenciar, compartilhar e versionar arquivos na nuvem, desenvolvido com Tauri, React e Rust. Focado em empresas e equipes, o app oferece uma interface intuitiva com funcionalidades como drag & drop, commits com mensagens, categorias de arquivos, e integração com provedores de nuvem.
 
 ## ✨ Funcionalidades principais
@@ -62,3 +66,4 @@ pnpm tauri dev
 ```bash
 pnpm tauri build
 ```
+
