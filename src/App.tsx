@@ -26,9 +26,9 @@ import FallbackSuspense from './views/FallbackSuspense';
 import './assets/styles/global.css';
 import { theme } from './common/MantineTheme';
 import { useAppTheme } from './common/useAppTheme';
-import Categorybtn from './assets/buttons/categorybtn'; // Import the custom button
-import Settingsbtn from './assets/buttons/settingsbtn'; // Import the custom button
-
+import Categorybtn from './assets/buttons/categorybtn';
+import Settingsbtn from './assets/buttons/settingsbtn'; 
+import Cloudsearchbtn from './assets/buttons/cloudsearchbtn';
 
 const SettingsPage = lazy(() => import('./views/Settings'));
 
@@ -130,6 +130,15 @@ export default function App() {
       },
     },
     {
+    type: 'action',
+    name: t('Search'),
+    id: 'Cloudsearchbtn',
+    className: 'action-item action-btn',
+    action: async () => {
+      // função que pesquisa na nuvem usando configuração do usuário
+    },
+  },
+    {
       type: 'action',
       name: t('Category'),
       id: 'category-btn',
@@ -141,7 +150,7 @@ export default function App() {
     {
       type: 'action',
       name: t('OpenFileSearcher'),
-      id: 'file-search-btn',
+      id: 'cloudsearchbtn',
       className: 'action-item action-btn',
       action: async () => {
         try {
@@ -328,7 +337,19 @@ export default function App() {
                           }}
                         />
                       );
-                    } else {
+                    } else if (view.id === 'Cloudsearchbtn') {
+                      return (
+                        <Cloudsearchbtn
+                        key={index}
+                          text={view.name}
+                          onClick={() => {
+                            view.action();
+                            toggleMobileNav();
+                          }}
+                        />
+                      )
+                    }
+                     else {
                       // Use Mantine Button for other actions
                       return (
                         <Button
