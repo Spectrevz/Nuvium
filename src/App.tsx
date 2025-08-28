@@ -6,6 +6,10 @@ import {
 	Space,
 	Text,
 	MantineProvider,
+	MultiSelect,
+	MultiSelectProps,
+	Box,
+	Avatar,
 } from "@mantine/core";
 import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -46,10 +50,9 @@ import FallbackSuspense from "./views/FallbackSuspense";
 import "./assets/styles/global.css";
 import { theme } from "./common/MantineTheme";
 import { useAppTheme } from "./common/useAppTheme";
-import Categorybtn from "./assets/buttons/categorybtn";
+import CategorySelector from "./assets/buttons/categoryselector";
 import Settingsbtn from "./assets/buttons/settingsbtn";
 import Cloudsearchbtn from "./assets/buttons/cloudsearchbtn";
-import { Avatar } from "@mantine/core";
 
 const SettingsPage = lazy(() => import("./views/Settings"));
 
@@ -59,8 +62,8 @@ interface LinkView {
 	path: string;
 	exact?: boolean;
 	name: string;
+	classname: string;
 	id: string;
-	className: string;
 }
 
 interface ActionButtonView {
@@ -70,8 +73,14 @@ interface ActionButtonView {
 	id: string;
 	className: string;
 }
+interface CustomComponentView {
+	type: "custom";
+	id: string;
+	classname: string;
+	render: () => JSX.Element;
+}
 
-type View = LinkView | ActionButtonView;
+type View = LinkView | ActionButtonView | CustomComponentView;
 
 export default function App() {
 	const { t, i18n } = useTranslation();
@@ -81,6 +90,7 @@ export default function App() {
 	const [currentWindowLabel, setCurrentWindowLabel] = useState<string | null>(
 		null
 	);
+	const [categoryValue, setCategoryValue] = useState<string[]>([]);
 
 	useEffect(() => {
 		const getLabel = async () => {
@@ -169,13 +179,10 @@ export default function App() {
 			},
 		},
 		{
-			type: "action",
-			name: t("Category"),
+			type: "custom",
 			id: "category-btn",
-			className: "action-item action-btn",
-			action: async () => {
-				// Placeholder for category action
-			},
+			classname: "action-item action-btn",
+			render: () => <CategorySelector />,
 		},
 		{
 			type: "action",
@@ -229,7 +236,7 @@ export default function App() {
 			path: "/settings",
 			name: t("Settings"),
 			id: "settings-view-internal-route",
-			className: "",
+			classname: "",
 		},
 	];
 
@@ -381,7 +388,8 @@ export default function App() {
 							{views
 								.filter(
 									(view) =>
-										(view.type === "action" || view.type === "link") && view.id !== "open-settings-btn"
+										(view.type === "action" || view.type === "link" || view.type === "custom") &&
+										view.id !== "open-settings-btn"
 								)
 								.map((view, index) => {
 									if (view.type === "link" && view.path === "/settings") {
@@ -389,7 +397,7 @@ export default function App() {
 									}
 									if (view.type === "link") {
 										const combinedClassNames = `${classes.navLink || ""} ${
-											view.className || ""
+											view.classname || ""
 										}`.trim();
 										return (
 											<NavLink
@@ -423,19 +431,7 @@ export default function App() {
 												/>
 											);
 										} //configura
-										else if (view.id === "category-btn") {
-											// Use CustomButton for the "Category" action
-											return (
-												<Categorybtn
-													key={index}
-													text={view.name}
-													onClick={() => {
-														view.action();
-														toggleMobileNav();
-													}}
-												/>
-											);
-										} else if (view.id === "Cloudsearchbtn") {
+										else if (view.id === "Cloudsearchbtn") {
 											return (
 												<Cloudsearchbtn
 													key={index}
@@ -467,7 +463,16 @@ export default function App() {
 												</Button>
 											);
 										}
+									} else if (view.type === "custom") {
+										if (view.id === "category-btn") {
+											return (
+												<Box key={index} p="xs">
+													{view.render()}
+												</Box>
+											);
+										}
 									}
+
 									return null;
 								})}
 						</AppShell.Section>
