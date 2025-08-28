@@ -29,7 +29,7 @@ export default function CategorySelector() {
       placeholder="Categories"
 
       maxDropdownHeight={160}
-      comboboxProps={{ withinPortal: false }}
+      comboboxProps={{ withinPortal: false, position: "right" }}
       styles={{
       input: { backgroundColor: "transparent" },
 
