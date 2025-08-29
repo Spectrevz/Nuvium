@@ -50,9 +50,9 @@ import FallbackSuspense from "./views/FallbackSuspense";
 import "./assets/styles/global.css";
 import { theme } from "./common/MantineTheme";
 import { useAppTheme } from "./common/useAppTheme";
-import CategorySelector from "./assets/buttons/categoryselector";
-import Settingsbtn from "./assets/buttons/settingsbtn";
-import Cloudsearchbtn from "./assets/buttons/cloudsearchbtn";
+import CategorySelector from "./components/buttons/categoryselector";
+import Settingsbtn from "./components/buttons/settingsbtn";
+import Cloudsearchbtn from "./components/buttons/cloudsearchbtn";
 
 const SettingsPage = lazy(() => import("./views/Settings"));
 
@@ -75,6 +75,7 @@ interface ActionButtonView {
 }
 interface CustomComponentView {
 	type: "custom";
+	name: string;
 	id: string;
 	classname: string;
 	render: () => JSX.Element;
@@ -180,13 +181,14 @@ export default function App() {
 		},
 		{
 			type: "custom",
+			name: t("Category"),
 			id: "category-btn",
 			classname: "action-item action-btn",
 			render: () => <CategorySelector />,
 		},
 		{
 			type: "action",
-			name: t("OpenFileSearcher"),
+			name: t("Selectfiles"),
 			id: "cloudsearchbtn",
 			className: "action-item action-btn",
 			action: async () => {
@@ -388,7 +390,9 @@ export default function App() {
 							{views
 								.filter(
 									(view) =>
-										(view.type === "action" || view.type === "link" || view.type === "custom") &&
+										(view.type === "action" ||
+											view.type === "link" ||
+											view.type === "custom") &&
 										view.id !== "open-settings-btn"
 								)
 								.map((view, index) => {
