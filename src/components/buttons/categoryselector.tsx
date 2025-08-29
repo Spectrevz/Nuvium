@@ -45,7 +45,6 @@ export default function CategorySelector() {
         textAlign: "left",
         paddingRight: "58px"
       },
-
       }}
     searchable      
     clearable
