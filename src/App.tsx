@@ -41,7 +41,6 @@ import SimpleBar from "simplebar-react";
 import "simplebar-react/dist/simplebar.min.css";
 import classes from "./assets/styles/App.module.css";
 import { useCookie, useLocalForage } from "./common/utils";
-import LanguageHeaders from "./components/LanguageHeaders";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { useTauriContext } from "./tauri/TauriProvider";
 import { TitleBar } from "./tauri/TitleBar";
