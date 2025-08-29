@@ -29,7 +29,7 @@ const Card: React.FC<ButtonProps> = ({ text, onClick }) => {
 				</Dropzone>
 
       {/*Parte que vai aparecer os arquivos que o usuario vai anexando (arrumar progressbar) */}
-      
+
 				<FileList>
 
 				{/* <FileItem>
@@ -238,13 +238,35 @@ const DropInfo = styled.p`
 `;
 
 const FileList = styled.ul`
-	margin-top: 1.5rem;
-	list-style: none;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
+  margin-top: 1.5rem;
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  /* Scroll se houver muitos arquivos */
+  max-height: 250px; /* ajuste como quiser */
+  overflow-y: auto;
+
+  /* Scrollbar bonitinha */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #3b82f6 transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #3b82f6;
+    border-radius: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 `;
+
 
 const FileItem = styled.li`
 	display: flex;
