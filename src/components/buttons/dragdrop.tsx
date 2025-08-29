@@ -244,7 +244,7 @@ const FileList = styled.ul`
   display: flex;
   flex-direction: column;
   gap: 1rem;
-
+d
   /* Scroll se houver muitos arquivos */
   max-height: 250px; /* ajuste como quiser */
   overflow-y: auto;
