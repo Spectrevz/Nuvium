@@ -28,6 +28,7 @@ const StyledWrapper = styled.div`
     align-items: center;
     position: relative;
     max-width: 190px;
+    margin-top: 1.5rem;
   }
 
   .input {
@@ -38,7 +39,7 @@ const StyledWrapper = styled.div`
     box-shadow: 0 0 0 1.5px #2b2c37, 0 0 25px -17px #000;
     border: 0;
     border-radius: 12px;
-    background-color: #16171d;
+    background-color: #13141aff;
     outline: none;
     color: #bdbecb;
     transition: all 0.25s cubic-bezier(0.19, 1, 0.22, 1);
@@ -48,10 +49,15 @@ const StyledWrapper = styled.div`
 
   .input::placeholder {
     color: #bdbecb;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
   }
 
   .input:hover {
     box-shadow: 0 0 0 2.5px #2f303d, 0px 0px 25px -15px #000;
+
+
   }
 
   .input:active {

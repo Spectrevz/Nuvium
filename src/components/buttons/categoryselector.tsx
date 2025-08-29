@@ -22,20 +22,35 @@ export default function CategorySelector() {
   const categoryItems = getTranslatedCategories();
 
   return (
-    <MultiSelect
+    <div style={{ display: "flex", justifyContent: "left" }}>
+          <MultiSelect
       data={categoryItems}
       value={categoryValue}
       onChange={setCategoryValue}
       label=" "
       placeholder={t("Category")}
-
+      
       maxDropdownHeight={160}
       comboboxProps={{ withinPortal: false, position: "right" }}
       styles={{
-      input: { backgroundColor: "transparent" },
+      input: { 
+        backgroundColor: "#13141aff",
+        borderRadius: "12px",
+        width: "100%",
+        paddingLeft: "0.75rem",
+        marginLeft: "-12px",
+        marginRight: "-39px",
+        fontSize: "14px",
+        letterSpacing: "0.5px",
+        textAlign: "left",
+        paddingRight: "58px"
+      },
+
       }}
     searchable      
     clearable
     />
+    </div>
+
   );
 }

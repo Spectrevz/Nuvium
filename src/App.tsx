@@ -53,6 +53,8 @@ import { useAppTheme } from "./common/useAppTheme";
 import CategorySelector from "./components/buttons/categoryselector";
 import Settingsbtn from "./components/buttons/settingsbtn";
 import Cloudsearchbtn from "./components/buttons/cloudsearchbtn";
+import Card from "./components/buttons/dragdrop";
+import Archiveselec from "./components/buttons/archiveselec";
 
 const SettingsPage = lazy(() => import("./views/Settings"));
 
@@ -189,7 +191,7 @@ export default function App() {
 		{
 			type: "action",
 			name: t("Selectfiles"),
-			id: "cloudsearchbtn",
+			id: "archiveselec",
 			className: "action-item action-btn",
 			action: async () => {
 				try {
@@ -240,6 +242,14 @@ export default function App() {
 			id: "settings-view-internal-route",
 			classname: "",
 		},
+		{
+			type: "action",
+			name: t("Drop"),
+			id: "Card",
+			className: "action-item action-btn",
+			action: async () => {
+			},
+		}
 	];
 
 	useHotkeys([["ctrl+J", toggleColorScheme]]);
@@ -446,7 +456,31 @@ export default function App() {
 													}}
 												/>
 											);
-										} else {
+										} else if (view.id === "Card") {
+											return (
+												<Card
+													key={index}
+													text={view.name}
+													onClick={() => {
+														view.action();
+														toggleMobileNav();
+													}}
+												/>
+											);
+										} else if (view.id === "archiveselec"){
+											return (
+												<Archiveselec
+													key={index}
+													text={view.name}
+													onClick={() => {
+														view.action();
+														toggleMobileNav();
+													}}
+												/>
+											);
+										}
+										
+										else {
 											// Use Mantine Button for other actions
 											return (
 												<Button
