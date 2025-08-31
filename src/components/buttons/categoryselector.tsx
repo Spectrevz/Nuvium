@@ -43,7 +43,7 @@ export default function CategorySelector() {
         fontSize: "14px",
         letterSpacing: "0.5px",
         textAlign: "left",
-        paddingRight: "58px"
+        paddingRight: "4.5rem"
       },
       }}
     searchable      

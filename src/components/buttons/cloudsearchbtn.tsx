@@ -34,7 +34,7 @@ const StyledWrapper = styled.div`
   .input {
     font-family: "Montserrat", sans-serif;
     width: 100%;
-    height: 30px;
+    height: 33px;
     padding-left: 2.5rem;
     box-shadow: 0 0 0 1.5px #2b2c37, 0 0 25px -17px #000;
     border: 0;
@@ -45,6 +45,7 @@ const StyledWrapper = styled.div`
     transition: all 0.25s cubic-bezier(0.19, 1, 0.22, 1);
     cursor: text;
     z-index: 0;
+    
   }
 
   .input::placeholder {

@@ -246,9 +246,8 @@ export default function App() {
 			name: t("Drop"),
 			id: "Card",
 			className: "action-item action-btn",
-			action: async () => {
-			},
-		}
+			action: async () => {},
+		},
 	];
 
 	useHotkeys([["ctrl+J", toggleColorScheme]]);
@@ -466,7 +465,7 @@ export default function App() {
 													}}
 												/>
 											);
-										} else if (view.id === "archiveselec"){
+										} else if (view.id === "archiveselec") {
 											return (
 												<Archiveselec
 													key={index}
@@ -477,9 +476,7 @@ export default function App() {
 													}}
 												/>
 											);
-										}
-										
-										else {
+										} else {
 											// Use Mantine Button for other actions
 											return (
 												<Button
